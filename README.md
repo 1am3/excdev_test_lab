@@ -1,2 +1,7 @@
 # excdev_test_lab
-Тестовое задание для excdev1
+Тестовое задание для excdev
+
+Руководство по запуску команд в файле COMMANDS_USAGE.md
+Руководство по фронту в файле FRONTEND.md
+Руководство по запуску очередей в файле QUEUES_USAGE.md
+Руководство по репозиториям в файле REPOSITORIES_USAGE.md
