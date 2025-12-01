@@ -50,36 +50,54 @@ class UserRepository extends BaseRepository
     public function deposit(int $userId, float $amount, string $description = null): Operation
     {
         $user = $this->find($userId);
+        if (!$user) {
+            throw new \Exception("Пользователь с ID {$userId} не найден");
+        }
         return $user->deposit($amount, $description);
     }
 
     public function withdraw(int $userId, float $amount, string $description = null): Operation
     {
         $user = $this->find($userId);
+        if (!$user) {
+            throw new \Exception("Пользователь с ID {$userId} не найден");
+        }
         return $user->withdraw($amount, $description);
     }
 
     public function tryWithdraw(int $userId, float $amount, string $description = null): bool
     {
         $user = $this->find($userId);
+        if (!$user) {
+            return false;
+        }
         return $user->tryWithdraw($amount, $description);
     }
 
     public function getBalance(int $userId): float
     {
         $user = $this->find($userId);
+        if (!$user) {
+            throw new \Exception("Пользователь с ID {$userId} не найден");
+        }
         return $user->current_balance;
     }
 
     public function hasEnoughBalance(int $userId, float $amount): bool
     {
         $user = $this->find($userId);
+        if (!$user) {
+            return false;
+        }
         return $user->hasEnoughBalance($amount);
     }
 
     public function getOperationsHistory(int $userId, $from = null, $to = null): Collection
     {
         $user = $this->find($userId);
+        if (!$user) {
+            throw new \Exception("Пользователь с ID {$userId} не найден");
+        }
         return $user->getOperationsHistory($from, $to);
     }
 
@@ -87,6 +105,14 @@ class UserRepository extends BaseRepository
     {
         $fromUser = $this->find($fromUserId);
         $toUser = $this->find($toUserId);
+
+        if (!$fromUser) {
+            throw new \Exception("Отправитель с ID {$fromUserId} не найден");
+        }
+
+        if (!$toUser) {
+            throw new \Exception("Получатель с ID {$toUserId} не найден");
+        }
 
         if (!$fromUser->hasEnoughBalance($amount)) {
             throw new \Exception('Недостаточно средств для перевода');

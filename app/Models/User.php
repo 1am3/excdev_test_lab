@@ -57,6 +57,12 @@ class User extends Authenticatable
         return $this->hasMany(Operation::class)->where('status', Operation::STATUS_COMPLETED);
     }
 
+    private function getBalanceFromDatabase(): float
+    {
+        $balance = $this->balance()->first();
+        return $balance ? $balance->balance : 0;
+    }
+
     public function getCurrentBalanceAttribute(): float
     {
         // Если запись в balance не существует, инициализируем её суммой из операций
@@ -66,6 +72,10 @@ class User extends Authenticatable
                 ->value('balance') ?? 0;
 
             $this->balance()->create(['balance' => $calculatedBalance]);
+
+            // Получаем свежий баланс из БД
+            $balance = $this->balance()->first();
+            return $balance ? $balance->balance : 0;
         }
 
         return $this->balance->balance;
@@ -94,7 +104,8 @@ class User extends Authenticatable
 
     public function deposit(float $amount, string $description = null): Operation
     {
-        $currentBalance = $this->current_balance;
+        // Получаем текущий баланс напрямую из базы данных или создаем нулевой
+        $currentBalance = $this->getBalanceFromDatabase();
 
         $operation = $this->operations()->create([
             'type' => Operation::TYPE_DEPOSIT,
@@ -106,20 +117,18 @@ class User extends Authenticatable
         ]);
 
         // Обновляем баланс в таблице balance
-        if ($this->balance) {
-            $this->balance->increment('balance', $amount);
-        } else {
-            $this->balance()->create(['balance' => $amount]);
-        }
+        $balanceRecord = $this->balance ?: $this->balance()->create(['balance' => 0]);
+        $balanceRecord->increment('balance', $amount);
 
         return $operation;
     }
 
     public function withdraw(float $amount, string $description = null): Operation
     {
-        $currentBalance = $this->current_balance;
+        // Получаем текущий баланс напрямую из базы данных
+        $currentBalance = $this->getBalanceFromDatabase();
 
-        if (!$this->hasEnoughBalance($amount)) {
+        if ($currentBalance < $amount) {
             throw new \Exception('Недостаточно средств на балансе');
         }
 
@@ -133,9 +142,8 @@ class User extends Authenticatable
         ]);
 
         // Обновляем баланс в таблице balance (уменьшаем)
-        if ($this->balance) {
-            $this->balance->decrement('balance', $amount);
-        }
+        $balanceRecord = $this->balance ?: $this->balance()->create(['balance' => 0]);
+        $balanceRecord->decrement('balance', $amount);
 
         return $operation;
     }
